@@ -10,3 +10,10 @@
 
 # Keep Flutter wrapper (just in case)
 -keep class com.example.music_downloader.** { *; }
+
+# Chaquopy (Python for Android, used by youtubedl-android)
+-keep class com.chaquo.python.** { *; }
+-keep class com.chaquo.python.android.** { *; }
+
+# Apache Commons (used by youtubedl-android for zip extraction)
+-keep class org.apache.commons.compress.archivers.zip.** { *; }
