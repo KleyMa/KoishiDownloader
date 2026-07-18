@@ -1,5 +1,5 @@
 {
-  "app_title": "Media Downloader",
+  "app_title": "Koishi Downloader",
 
   "download": "Descargar",
   "playlist": "Playlist",
@@ -149,7 +149,7 @@
   "error_sign_in_bot": "Error: El video requiere iniciar sesión",
   "error_private_video": "Error: Video privado",
 
-  "first_launch_welcome": "Bienvenido a Media Downloader",
+  "first_launch_welcome": "Bienvenido a Koishi Downloader",
   "first_launch_choose_location": "Elige dónde guardar tus descargas",
   "first_launch_use_default": "Usar Ruta Predeterminada",
   "first_launch_choose_custom": "Elegir Ruta Personalizada",

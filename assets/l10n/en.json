@@ -1,5 +1,5 @@
 {
-  "app_title": "Media Downloader",
+  "app_title": "Koishi Downloader",
 
   "download": "Download",
   "playlist": "Playlist",
@@ -149,7 +149,7 @@
   "error_sign_in_bot": "Error: Video requires sign-in or bot check",
   "error_private_video": "Error: Private video",
 
-  "first_launch_welcome": "Welcome to Media Downloader",
+  "first_launch_welcome": "Welcome to Koishi Downloader",
   "first_launch_choose_location": "Choose where to save your downloads",
   "first_launch_use_default": "Use Default Path",
   "first_launch_choose_custom": "Choose Custom Path",

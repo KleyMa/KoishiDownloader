@@ -147,7 +147,7 @@ class SettingsPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Media Downloader',
+                        'Koishi Downloader',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.4),
                           fontSize: 14,

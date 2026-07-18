@@ -1,5 +1,5 @@
 name: music_downloader
-description: "Media downloader app using yt-dlp and FFmpeg."
+description: "Koishi downloader app using yt-dlp and FFmpeg."
 publish_to: 'none'
 version: 1.0.0+1
 
