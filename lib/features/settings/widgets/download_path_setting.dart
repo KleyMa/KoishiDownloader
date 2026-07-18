@@ -1,21 +1,21 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/settings_provider.dart';
 
-/// Opens the Android native folder-picker (ACTION_OPEN_DOCUMENT_TREE) and
-/// returns the selected path, or null if the user cancelled.
+import 'package:file_picker/file_picker.dart';
+
+/// Opens the system folder-picker and returns the selected path,
+/// or null if the user cancelled.
 Future<String?> _pickDirectory(String dialogTitle) async {
-  const channel = MethodChannel('com.musicdownloader.app/ytdlp');
   try {
-    final String? result = await channel.invokeMethod<String>(
-      'pickDirectory',
-      {'title': dialogTitle},
+    String? result = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: dialogTitle,
     );
     return result;
-  } on PlatformException {
+  } catch (e) {
     return null;
   }
 }

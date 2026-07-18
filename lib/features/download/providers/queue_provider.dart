@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -71,14 +72,41 @@ class QueueNotifier extends StateNotifier<List<DownloadItem>> {
   Future<void> cancelItem(String id) async {
     final ytDlp = _ref.read(ytDlpServiceProvider);
     final item = state.firstWhere((i) => i.id == id, orElse: () => state.first);
-    if (item.status.isActive && _currentTaskId != null) {
-      await ytDlp.cancelDownload(_currentTaskId!);
+    
+    updateItemStatus(id, DownloadStatus.cancelled); // Sync update
+
+    if (item.status.isActive && _currentTaskId == id) {
+      await ytDlp.cancelDownload(id);
     }
-    updateItemStatus(id, DownloadStatus.cancelled);
+  }
+
+  Future<void> pauseItem(String id) async {
+    final ytDlp = _ref.read(ytDlpServiceProvider);
+    final item = state.firstWhere((i) => i.id == id, orElse: () => state.first);
+    
+    updateItemStatus(id, DownloadStatus.paused); // Sync update
+
+    if (item.status.isActive && _currentTaskId == id) {
+      await ytDlp.cancelDownload(id);
+    }
+  }
+
+  void resumeItem(String id) {
+    updateItemStatus(id, DownloadStatus.queued, errorMessage: null);
+    if (!_isProcessing) {
+      startProcessingQueue();
+    }
   }
 
   Future<void> removeItem(String id) async {
-    await cancelItem(id);
+    final ytDlp = _ref.read(ytDlpServiceProvider);
+    final item = state.firstWhere((i) => i.id == id, orElse: () => state.first);
+    
+    updateItemStatus(id, DownloadStatus.cancelled); // Sync update to avoid completion
+
+    if (item.status.isActive && _currentTaskId == id) {
+      await ytDlp.cancelDownload(id);
+    }
     removeFromQueue(id);
   }
 
@@ -161,6 +189,11 @@ class QueueNotifier extends StateNotifier<List<DownloadItem>> {
         _progressSubscription = ytDlp.progressStream.listen((data) {
           final taskId = data['taskId'] as String?;
           if (taskId == _currentTaskId) {
+            final currentItem = state.firstWhere((i) => i.id == item.id, orElse: () => item);
+            if (currentItem.status == DownloadStatus.paused || currentItem.status == DownloadStatus.cancelled) {
+              return;
+            }
+
             final rawProgress = (data['progress'] as num?)?.toDouble() ?? 0.0;
             final progress = (rawProgress < 0.0 ? 0.0 : rawProgress) / 100.0; // Scale 0-100 to 0.0-1.0
             final status = data['status'] as String?;
@@ -169,6 +202,7 @@ class QueueNotifier extends StateNotifier<List<DownloadItem>> {
             notifications.showProgressNotification(
               notificationId,
               title,
+              tr('queue_status_downloading_percent', args: ['${(progress * 100).round()}']),
               (progress * 100).round(),
             );
 
@@ -178,7 +212,15 @@ class QueueNotifier extends StateNotifier<List<DownloadItem>> {
               updateItemStatus(item.id, DownloadStatus.completed);
             } else if (status == 'error') {
               final line = data['line'] as String?;
-              updateItemStatus(item.id, DownloadStatus.error, errorMessage: line);
+              String errorMsg = line ?? tr('error_download_failed');
+              if (errorMsg.contains('Video unavailable')) {
+                errorMsg = tr('error_video_unavailable');
+              } else if (errorMsg.contains('Sign in to confirm')) {
+                errorMsg = tr('error_sign_in_bot');
+              } else if (errorMsg.contains('Private video')) {
+                errorMsg = tr('error_private_video');
+              }
+              updateItemStatus(item.id, DownloadStatus.error, errorMessage: errorMsg);
             }
           }
         });
@@ -196,7 +238,7 @@ class QueueNotifier extends StateNotifier<List<DownloadItem>> {
 
         // Check final status
         final currentItem = state.firstWhere((i) => i.id == item.id);
-        if (currentItem.status == DownloadStatus.cancelled) {
+        if (currentItem.status == DownloadStatus.cancelled || currentItem.status == DownloadStatus.paused) {
           await notifications.cancelNotification(notificationId);
           continue;
         }
@@ -213,15 +255,34 @@ class QueueNotifier extends StateNotifier<List<DownloadItem>> {
         debugPrint('[QueueNotifier] ❌ Download error for ${item.url}');
         debugPrint('[QueueNotifier] Error: $e');
         debugPrint('[QueueNotifier] Stack trace:\n$stackTrace');
+
+        final currentItem = state.firstWhere((i) => i.id == item.id, orElse: () => item);
+        if (currentItem.status == DownloadStatus.paused || currentItem.status == DownloadStatus.cancelled) {
+          _progressSubscription?.cancel();
+          _currentTaskId = null;
+          continue;
+        }
+
+        String errorMsg = e.toString();
+        if (errorMsg.contains('Video unavailable')) {
+          errorMsg = tr('error_video_unavailable');
+        } else if (errorMsg.contains('Sign in to confirm')) {
+          errorMsg = tr('error_sign_in_bot');
+        } else if (errorMsg.contains('Private video')) {
+          errorMsg = tr('error_private_video');
+        } else {
+          errorMsg = tr('error_download_failed');
+        }
+
         updateItemStatus(
           item.id,
           DownloadStatus.error,
-          errorMessage: e.toString(),
+          errorMessage: errorMsg,
         );
         await notifications.showErrorNotification(
           notificationId,
           item.title ?? item.url,
-          e.toString(),
+          errorMsg,
         );
       }
 
@@ -244,7 +305,8 @@ class QueueNotifier extends StateNotifier<List<DownloadItem>> {
         final item = state.firstWhere((i) => i.id == itemId);
         if (item.status == DownloadStatus.completed ||
             item.status == DownloadStatus.error ||
-            item.status == DownloadStatus.cancelled) {
+            item.status == DownloadStatus.cancelled ||
+            item.status == DownloadStatus.paused) {
           timer.cancel();
           completer.complete();
         }

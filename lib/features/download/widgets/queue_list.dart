@@ -1,8 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../core/constants/app_constants.dart';
 import '../providers/queue_provider.dart';
 import 'queue_item_tile.dart';
 
@@ -12,11 +10,7 @@ class QueueList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final queue = ref.watch(queueProvider);
-    final hasCompleted = queue.any(
-      (item) =>
-          item.status == DownloadStatus.completed ||
-          item.status == DownloadStatus.cancelled,
-    );
+
 
     if (queue.isEmpty) {
       return _buildEmptyState();
@@ -25,32 +19,7 @@ class QueueList extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (hasCompleted)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: () {
-                  ref.read(queueProvider.notifier).clearCompleted();
-                },
-                icon: const Icon(Icons.cleaning_services_rounded, size: 16),
-                label: Text(tr('clear_completed')),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.white.withValues(alpha: 0.6),
-                  textStyle: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-          ),
+
         ReorderableListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),

@@ -74,7 +74,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   void resetForm() {
-    state = const DownloadState();
+    state = state.copyWith(
+      currentUrl: '',
+      isPlaylistMode: false,
+      isLoading: false,
+    );
   }
 
   String _detectPlatform(String url) {

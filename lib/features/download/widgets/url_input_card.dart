@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_constants.dart';
-import '../../settings/providers/settings_provider.dart';
 import '../providers/download_provider.dart';
 
 class UrlInputCard extends ConsumerStatefulWidget {
@@ -14,32 +12,43 @@ class UrlInputCard extends ConsumerStatefulWidget {
   ConsumerState<UrlInputCard> createState() => _UrlInputCardState();
 }
 
-class _UrlInputCardState extends ConsumerState<UrlInputCard>
-    with SingleTickerProviderStateMixin {
+class _UrlInputCardState extends ConsumerState<UrlInputCard> with WidgetsBindingObserver {
   late final TextEditingController _controller;
-  late final AnimationController _animController;
-  late final Animation<double> _glowAnimation;
   bool _isFocused = false;
+  static const _sharedChannel = MethodChannel('app.channel.shared.data');
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller = TextEditingController();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-    _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
-    );
-    _animController.repeat(reverse: true);
+    _checkSharedText();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
-    _animController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkSharedText();
+    }
+  }
+
+  Future<void> _checkSharedText() async {
+    try {
+      final String? sharedText = await _sharedChannel.invokeMethod('getSharedText');
+      if (sharedText != null && sharedText.isNotEmpty) {
+        _controller.text = sharedText;
+        ref.read(downloadFormProvider.notifier).setUrl(sharedText);
+      }
+    } catch (e) {
+      // Ignore
+    }
   }
 
   Future<void> _pasteFromClipboard() async {
@@ -55,91 +64,23 @@ class _UrlInputCardState extends ConsumerState<UrlInputCard>
     ref.read(downloadFormProvider.notifier).setUrl('');
   }
 
-  IconData _getPlatformIcon(String platform) {
-    switch (platform) {
-      case 'YouTube':
-        return Icons.play_circle_fill_rounded;
-      case 'Facebook':
-        return Icons.facebook_rounded;
-      case 'Twitter/X':
-        return Icons.alternate_email_rounded;
-      case 'Instagram':
-        return Icons.camera_alt_rounded;
-      case 'TikTok':
-        return Icons.music_note_rounded;
-      default:
-        return Icons.language_rounded;
-    }
-  }
-
-  String _getPlatformName(String platform) {
-    switch (platform) {
-      case 'YouTube':
-        return tr('platform_youtube');
-      case 'Facebook':
-        return tr('platform_facebook');
-      case 'Twitter/X':
-        return tr('platform_twitter');
-      case 'Instagram':
-        return tr('platform_instagram');
-      case 'TikTok':
-        return tr('platform_tiktok');
-      case 'Other':
-        return tr('platform_other');
-      default:
-        return platform;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final formState = ref.watch(downloadFormProvider);
 
-    return AnimatedBuilder(
-      animation: _glowAnimation,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: _isFocused
-                ? LinearGradient(
-                    colors: [
-                      const Color(0xFF1DB954)
-                          .withValues(alpha: 0.3 * _glowAnimation.value),
-                      const Color(0xFF1DB954)
-                          .withValues(alpha: 0.1 * _glowAnimation.value),
-                      Colors.transparent,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : null,
-            boxShadow: _isFocused
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF1DB954)
-                          .withValues(alpha: 0.15 * _glowAnimation.value),
-                      blurRadius: 20,
-                      spreadRadius: 2,
-                    ),
-                  ]
-                : null,
-          ),
-          child: child,
-        );
-      },
-      child: Card(
-        color: const Color(0xFF282828),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: _isFocused
-                ? const Color(0xFF1DB954).withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.05),
-            width: 1.5,
-          ),
+    return Card(
+      color: const Color(0xFF282828),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: _isFocused
+              ? const Color(0xFF1DB954).withValues(alpha: 0.5)
+              : Colors.white.withValues(alpha: 0.05),
+          width: 1.5,
         ),
-        elevation: 0,
+      ),
+      elevation: 0,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -183,7 +124,7 @@ class _UrlInputCardState extends ConsumerState<UrlInputCard>
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (formState.currentUrl.isNotEmpty)
+                        if (_isFocused || formState.currentUrl.isNotEmpty)
                           _buildIconButton(
                             icon: Icons.close_rounded,
                             onTap: _clearField,
@@ -200,104 +141,7 @@ class _UrlInputCardState extends ConsumerState<UrlInputCard>
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
-              // Platform chips
-              SizedBox(
-                height: 36,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: ref.watch(settingsProvider).selectedPlatforms.map((platform) {
-                          final isSelected = formState.selectedPlatform == platform;
-                          return Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                curve: Curves.easeOut,
-                                child: FilterChip(
-                                  selected: isSelected,
-                                  label: SizedBox(
-                                    width: double.infinity,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          _getPlatformIcon(platform),
-                                          size: 14,
-                                          color: isSelected
-                                              ? Colors.white
-                                              : Colors.white.withValues(alpha: 0.5),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Flexible(
-                                          child: Text(
-                                            _getPlatformName(platform),
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.w600
-                                                  : FontWeight.w400,
-                                              color: isSelected
-                                                  ? Colors.white
-                                                  : Colors.white.withValues(alpha: 0.6),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  backgroundColor: const Color(0xFF181818),
-                                  selectedColor:
-                                      const Color(0xFF1DB954).withValues(alpha: 0.25),
-                                  checkmarkColor: const Color(0xFF1DB954),
-                                  showCheckmark: false,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    side: BorderSide(
-                                      color: isSelected
-                                          ? const Color(0xFF1DB954)
-                                              .withValues(alpha: 0.5)
-                                          : Colors.white.withValues(alpha: 0.08),
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
-                                  labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                                  onSelected: (_) {
-                                    ref
-                                        .read(downloadFormProvider.notifier)
-                                        .setPlatform(platform);
-                                  },
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      onPressed: () => _showPlatformPicker(context, ref.read(settingsProvider).selectedPlatforms),
-                      icon: const Icon(Icons.edit_rounded, size: 16),
-                      style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xFF181818),
-                        foregroundColor: Colors.white.withValues(alpha: 0.7),
-                        minimumSize: const Size(36, 36),
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.08),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Removed Platform chips row
               // Playlist detection banner
               if (formState.currentUrl.isNotEmpty &&
                   _isPlaylistUrl(formState.currentUrl))
@@ -361,7 +205,6 @@ class _UrlInputCardState extends ConsumerState<UrlInputCard>
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -399,73 +242,5 @@ class _UrlInputCardState extends ConsumerState<UrlInputCard>
         url.contains('/sets/');
   }
 
-  void _showPlatformPicker(BuildContext context, List<String> currentPlatforms) {
-    final tempPlatforms = List<String>.from(currentPlatforms);
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF282828),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: const Text(
-                'Select Platforms (Max 3)',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: AppConstants.platforms.length,
-                  itemBuilder: (context, index) {
-                    final platform = AppConstants.platforms[index];
-                    final isChecked = tempPlatforms.contains(platform);
-                    return CheckboxListTile(
-                      title: Text(
-                        platform,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      value: isChecked,
-                      activeColor: const Color(0xFF1DB954),
-                      checkColor: Colors.black,
-                      onChanged: (val) {
-                        setState(() {
-                          if (val == true) {
-                            if (tempPlatforms.length < 3) {
-                              tempPlatforms.add(platform);
-                            }
-                          } else {
-                            if (tempPlatforms.length > 1) {
-                              tempPlatforms.remove(platform);
-                            }
-                          }
-                        });
-                      },
-                    );
-                  },
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
-                ),
-                TextButton(
-                  onPressed: () {
-                    ref.read(settingsProvider.notifier).updateSelectedPlatforms(tempPlatforms);
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Save', style: TextStyle(color: Color(0xFF1DB954))),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 }
 

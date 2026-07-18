@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -18,6 +19,7 @@ class PlaylistPage extends ConsumerStatefulWidget {
 
 class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   final _urlController = TextEditingController();
+  bool _isFocused = false;
   DownloadFormat _selectedFormat = DownloadFormat.mp3;
   String _selectedQuality = '320kbps';
 
@@ -25,6 +27,21 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   void dispose() {
     _urlController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data?.text != null && data!.text!.isNotEmpty) {
+      setState(() {
+        _urlController.text = data.text!;
+      });
+    }
+  }
+
+  void _clearField() {
+    setState(() {
+      _urlController.clear();
+    });
   }
 
   @override
@@ -94,9 +111,12 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                 Card(
                   color: const Color(0xFF282828),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: _isFocused
+                          ? const Color(0xFF1DB954).withValues(alpha: 0.5)
+                          : Colors.white.withValues(alpha: 0.05),
+                      width: 1.5,
                     ),
                   ),
                   elevation: 0,
@@ -104,9 +124,14 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                     padding: const EdgeInsets.all(14),
                     child: Column(
                       children: [
-                        TextField(
-                          controller: _urlController,
-                          style: const TextStyle(
+                        Focus(
+                          onFocusChange: (focused) {
+                            setState(() => _isFocused = focused);
+                          },
+                          child: TextField(
+                            controller: _urlController,
+                            onChanged: (value) => setState(() {}),
+                            style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
                           ),
@@ -131,6 +156,24 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                               color: Colors.white.withValues(alpha: 0.4),
                               size: 22,
                             ),
+                            suffixIcon: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_isFocused || _urlController.text.isNotEmpty)
+                                  _buildIconButton(
+                                    icon: Icons.close_rounded,
+                                    onTap: _clearField,
+                                    tooltip: tr('clear'),
+                                  ),
+                                _buildIconButton(
+                                  icon: Icons.content_paste_rounded,
+                                  onTap: _pasteFromClipboard,
+                                  tooltip: tr('paste_url'),
+                                  isAccent: true,
+                                ),
+                              ],
+                            ),
+                          ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -328,9 +371,9 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
           padding: const EdgeInsets.all(4),
           child: Row(
             children: [
-              _buildFormatOption('MP3', '🎵', DownloadFormat.mp3),
+              _buildFormatOption('MP3', Icons.music_note_rounded, DownloadFormat.mp3),
               const SizedBox(width: 4),
-              _buildFormatOption('MP4', '🎬', DownloadFormat.mp4),
+              _buildFormatOption('MP4', Icons.videocam_rounded, DownloadFormat.mp4),
             ],
           ),
         ),
@@ -339,7 +382,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   }
 
   Widget _buildFormatOption(
-      String label, String emoji, DownloadFormat format) {
+      String label, IconData icon, DownloadFormat format) {
     final isSelected = _selectedFormat == format;
     return Expanded(
       child: GestureDetector(
@@ -351,13 +394,14 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
           });
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             color: isSelected
                 ? const Color(0xFF1DB954).withValues(alpha: 0.2)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(11),
             border: Border.all(
               color: isSelected
                   ? const Color(0xFF1DB954).withValues(alpha: 0.4)
@@ -367,7 +411,13 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 16)),
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? const Color(0xFF1DB954)
+                    : Colors.white.withValues(alpha: 0.4),
+              ),
               const SizedBox(width: 6),
               Text(
                 label,
@@ -377,7 +427,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                       : Colors.white.withValues(alpha: 0.4),
                   fontSize: 13,
                   fontWeight:
-                      isSelected ? FontWeight.w700 : FontWeight.w400,
+                      isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
             ],
@@ -412,6 +462,9 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
           ),
         ),
         Container(
+          height: 58,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: const Color(0xFF181818),
             borderRadius: BorderRadius.circular(14),
@@ -421,6 +474,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
+              isExpanded: true,
               value: _selectedQuality,
               onChanged: (v) {
                 if (v != null) setState(() => _selectedQuality = v);
@@ -480,6 +534,34 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    required String tooltip,
+    bool isAccent = false,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(
+              icon,
+              size: 20,
+              color: isAccent
+                  ? const Color(0xFF1DB954)
+                  : Colors.white.withValues(alpha: 0.5),
+            ),
+          ),
         ),
       ),
     );

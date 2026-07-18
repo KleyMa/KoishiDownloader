@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import com.yausername.ffmpeg.FFmpeg
+import android.content.Intent
 
 class MainActivity : FlutterActivity() {
 
@@ -21,6 +22,17 @@ class MainActivity : FlutterActivity() {
         private const val TAG = "YtDlpNative"
         private const val METHOD_CHANNEL = "com.example.music_downloader/ytdlp"
         private const val EVENT_CHANNEL = "com.example.music_downloader/download_progress"
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent) // Update the intent so getSharedText reads the new one
+        if (Intent.ACTION_SEND == intent.action && "text/plain" == intent.type) {
+            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+            // Send it directly to flutter via channel if possible or let flutter poll.
+            // Since we rely on flutter polling on init/resume, setting the intent is enough 
+            // if flutter handles AppLifecycleState.resumed.
+        }
     }
 
     private val activeJobs = ConcurrentHashMap<String, Job>()
@@ -46,6 +58,26 @@ class MainActivity : FlutterActivity() {
                     eventSink = null
                 }
             })
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "app.channel.shared.data").setMethodCallHandler { call, result ->
+            if (call.method == "getSharedText") {
+                val intent = intent
+                val action = intent?.action
+                val type = intent?.type
+
+                if (Intent.ACTION_SEND == action && "text/plain" == type) {
+                    val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+                    // Clear the intent so it doesn't get processed again
+                    intent.action = Intent.ACTION_MAIN
+                    intent.removeExtra(Intent.EXTRA_TEXT)
+                    result.success(sharedText)
+                } else {
+                    result.success(null)
+                }
+            } else {
+                result.notImplemented()
+            }
+        }
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL).setMethodCallHandler { call, result ->
                 when (call.method) {

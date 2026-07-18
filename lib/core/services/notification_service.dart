@@ -93,6 +93,7 @@ class NotificationService {
   Future<void> showProgressNotification(
     int id,
     String title,
+    String body,
     int progress,
   ) async {
     final clampedProgress = progress.clamp(0, 100);
@@ -119,7 +120,7 @@ class NotificationService {
     await _plugin.show(
       id,
       title,
-      'Downloading… $clampedProgress%',
+      body,
       NotificationDetails(android: androidDetails),
     );
   }

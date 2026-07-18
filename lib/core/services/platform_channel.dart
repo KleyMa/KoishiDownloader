@@ -62,7 +62,7 @@ class YtDlpService {
     } on MissingPluginException {
       debugPrint('[YtDlpService] ❌ MISSING PLUGIN - native side not configured');
       _initCompleter!.completeError(
-        YtDlpException(
+        const YtDlpException(
           'yt-dlp platform channel not available. '
           'Ensure the native side is properly configured.',
           code: 'MISSING_PLUGIN',
@@ -113,7 +113,7 @@ class YtDlpService {
         'url': url,
       });
       if (result == null) {
-        throw YtDlpException(
+        throw const YtDlpException(
           'No information returned for the provided URL.',
           code: 'NULL_RESULT',
         );
@@ -136,7 +136,7 @@ class YtDlpService {
         'url': url,
       });
       if (result == null) {
-        throw YtDlpException(
+        throw const YtDlpException(
           'No playlist information returned.',
           code: 'NULL_RESULT',
         );
@@ -179,7 +179,7 @@ class YtDlpService {
         'outputPath': outputPath,
       });
       if (result == null) {
-        throw YtDlpException(
+        throw const YtDlpException(
           'Download start returned no task ID.',
           code: 'NULL_RESULT',
         );

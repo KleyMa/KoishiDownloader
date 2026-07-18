@@ -264,8 +264,15 @@ class _QueueItemTileState extends ConsumerState<QueueItemTile>
           _iconButton(
             icon: Icons.pause_rounded,
             color: Colors.orangeAccent,
-            tooltip: tr('cancel'),
-            onTap: () => ref.read(queueProvider.notifier).cancelItem(item.id),
+            tooltip: tr('pause'),
+            onTap: () => ref.read(queueProvider.notifier).pauseItem(item.id),
+          )
+        else if (item.status == DownloadStatus.paused)
+          _iconButton(
+            icon: Icons.play_arrow_rounded,
+            color: const Color(0xFF1DB954),
+            tooltip: tr('resume'),
+            onTap: () => ref.read(queueProvider.notifier).resumeItem(item.id),
           )
         else if (item.status == DownloadStatus.error || item.status == DownloadStatus.cancelled)
           _iconButton(
@@ -298,22 +305,22 @@ class _QueueItemTileState extends ConsumerState<QueueItemTile>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF282828),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(tr('confirm_delete') ?? 'Delete download?', style: const TextStyle(color: Colors.white)),
+        title: Text(tr('confirm_delete'), style: const TextStyle(color: Colors.white)),
         content: Text(
-          tr('confirm_delete_desc') ?? 'Are you sure you want to remove this from the queue?',
+          tr('confirm_delete_desc'),
           style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(tr('cancel') ?? 'Cancel', style: const TextStyle(color: Colors.white70)),
+            child: Text(tr('cancel'), style: const TextStyle(color: Colors.white70)),
           ),
           TextButton(
             onPressed: () {
               ref.read(queueProvider.notifier).removeItem(item.id);
               Navigator.pop(context);
             },
-            child: Text(tr('remove') ?? 'Delete', style: const TextStyle(color: Colors.redAccent)),
+            child: Text(tr('remove'), style: const TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -428,6 +435,11 @@ class _QueueItemTileState extends ConsumerState<QueueItemTile>
           color: Colors.white.withValues(alpha: 0.4),
           label: tr('queue_status_cancelled'),
         );
+      case DownloadStatus.paused:
+        return _StatusConfig(
+          color: Colors.orangeAccent,
+          label: tr('queue_status_paused'),
+        );
     }
   }
 
@@ -448,10 +460,7 @@ class _QueueItemTileState extends ConsumerState<QueueItemTile>
     }
   }
 
-  String _truncateUrl(String url) {
-    if (url.length <= 50) return url;
-    return '${url.substring(0, 47)}...';
-  }
+
 
   void _openFolder(String path) {
     if (path.isNotEmpty) {

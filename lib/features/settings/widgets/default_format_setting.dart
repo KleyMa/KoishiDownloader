@@ -56,20 +56,21 @@ class DefaultFormatSetting extends ConsumerWidget {
           ),
           const SizedBox(width: 12),
           Container(
+            height: 58,
             decoration: BoxDecoration(
               color: const Color(0xFF181818),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.06),
               ),
             ),
-            padding: const EdgeInsets.all(3),
+            padding: const EdgeInsets.all(4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 _FormatToggle(
                   label: 'MP3',
-                  emoji: '🎵',
+                  icon: Icons.music_note_rounded,
                   isSelected: isMp3,
                   onTap: () {
                     ref
@@ -77,10 +78,10 @@ class DefaultFormatSetting extends ConsumerWidget {
                         .updateFormat(DownloadFormat.mp3);
                   },
                 ),
-                const SizedBox(width: 2),
+                const SizedBox(width: 4),
                 _FormatToggle(
                   label: 'MP4',
-                  emoji: '🎬',
+                  icon: Icons.videocam_rounded,
                   isSelected: !isMp3,
                   onTap: () {
                     ref
@@ -99,13 +100,13 @@ class DefaultFormatSetting extends ConsumerWidget {
 
 class _FormatToggle extends StatelessWidget {
   final String label;
-  final String emoji;
+  final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _FormatToggle({
     required this.label,
-    required this.emoji,
+    required this.icon,
     required this.isSelected,
     required this.onTap,
   });
@@ -115,13 +116,14 @@ class _FormatToggle extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: isSelected
               ? const Color(0xFF1DB954).withValues(alpha: 0.2)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(11),
           border: Border.all(
             color: isSelected
                 ? const Color(0xFF1DB954).withValues(alpha: 0.4)
@@ -130,8 +132,15 @@ class _FormatToggle extends StatelessWidget {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 14)),
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected
+                  ? const Color(0xFF1DB954)
+                  : Colors.white.withValues(alpha: 0.4),
+            ),
             const SizedBox(width: 6),
             Text(
               label,
@@ -140,7 +149,7 @@ class _FormatToggle extends StatelessWidget {
                     ? Colors.white
                     : Colors.white.withValues(alpha: 0.4),
                 fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
           ],

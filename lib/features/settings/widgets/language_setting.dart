@@ -71,6 +71,22 @@ class LanguageSetting extends ConsumerWidget {
                     ref.read(settingsProvider.notifier).updateLocale(value);
                     final locale = Locale(value);
                     context.setLocale(locale);
+
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          tr('restart_app_changes'),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        backgroundColor: const Color(0xFF282828),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
                   }
                 },
                 dropdownColor: const Color(0xFF282828),

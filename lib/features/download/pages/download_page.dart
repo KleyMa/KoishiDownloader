@@ -89,9 +89,9 @@ class DownloadPage extends ConsumerWidget {
                 // Format and Quality Row
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Expanded(child: FormatSelector()),
-                    SizedBox(width: 16),
+                    const SizedBox(width: 12),
                     Expanded(child: QualitySelector()),
                   ],
                 ),
@@ -159,6 +159,18 @@ class DownloadPage extends ConsumerWidget {
                         ),
                       ),
                     const Spacer(),
+                    if (queue.any((i) => i.status == DownloadStatus.completed || i.status == DownloadStatus.cancelled))
+                      TextButton.icon(
+                        onPressed: () {
+                          queueNotifier.clearCompleted();
+                        },
+                        icon: const Icon(Icons.cleaning_services_rounded, size: 16),
+                        label: Text(tr('queue_clear_completed')),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white.withValues(alpha: 0.6),
+                          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                        ),
+                      ),
                     if (queue.isNotEmpty &&
                         !queueNotifier.isProcessing &&
                         queue.any(

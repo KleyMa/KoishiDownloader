@@ -95,7 +95,8 @@ enum DownloadStatus {
   converting,
   completed,
   error,
-  cancelled;
+  cancelled,
+  paused;
 
   /// Whether the task is still in progress (not terminal).
   bool get isActive =>

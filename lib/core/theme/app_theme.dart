@@ -134,7 +134,7 @@ class AppTheme {
   static ThemeData get darkTheme {
     final textTheme = _buildTextTheme(Brightness.dark);
 
-    final colorScheme = ColorScheme.dark(
+    const colorScheme = ColorScheme.dark(
       primary: AppColors.primary,
       onPrimary: Colors.black,
       secondary: AppColors.primary,
@@ -420,14 +420,14 @@ class AppTheme {
       ),
 
       // ── TabBar ──────────────────────────────────────────────────────────
-      tabBarTheme: TabBarThemeData(
+      tabBarTheme: const TabBarThemeData(
         labelColor: AppColors.onSurface,
         unselectedLabelColor: AppColors.secondaryText,
         indicatorColor: AppColors.primary,
         indicatorSize: TabBarIndicatorSize.label,
         dividerColor: Colors.transparent,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        unselectedLabelStyle: const TextStyle(
+        labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        unselectedLabelStyle: TextStyle(
           fontWeight: FontWeight.w400,
           fontSize: 14,
         ),
@@ -482,7 +482,7 @@ class AppTheme {
   static ThemeData get lightTheme {
     final textTheme = _buildTextTheme(Brightness.light);
 
-    final colorScheme = ColorScheme.light(
+    const colorScheme = ColorScheme.light(
       primary: AppColors.primary,
       onPrimary: Colors.white,
       secondary: AppColors.primary,
