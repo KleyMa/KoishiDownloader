@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:music_downloader/core/constants/app_constants.dart';
+import 'package:koishi_downloader/core/constants/app_constants.dart';
 
 /// Dart-side wrapper around the platform channels that communicate with the
 /// Kotlin/yt-dlp native layer.
@@ -207,6 +207,19 @@ class YtDlpService {
         'Failed to cancel download: ${e.message}',
         code: e.code,
       );
+    }
+  }
+
+  /// Tells the Android MediaScanner to scan the given file so it appears in the gallery/music player immediately.
+  Future<bool> scanFile(String filePath) async {
+    try {
+      final result = await _channel.invokeMethod<bool>('scanFile', {
+        'filePath': filePath,
+      });
+      return result ?? false;
+    } on PlatformException catch (e) {
+      debugPrint('Failed to scan file: ${e.message}');
+      return false;
     }
   }
 

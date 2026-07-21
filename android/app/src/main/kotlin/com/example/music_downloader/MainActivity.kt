@@ -13,7 +13,6 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
-import com.yausername.ffmpeg.FFmpeg
 import android.content.Intent
 
 class MainActivity : FlutterActivity() {
@@ -127,13 +126,27 @@ class MainActivity : FlutterActivity() {
                             handleGetProgress(taskId, result)
                         }
                     }
+                    "scanFile" -> {
+                        val filePath = call.argument<String>("filePath")
+                        if (filePath == null) {
+                            result.error("INVALID_ARGS", "filePath is required", null)
+                        } else {
+                            android.media.MediaScannerConnection.scanFile(
+                                this@MainActivity,
+                                arrayOf(filePath),
+                                null,
+                                null
+                            )
+                            result.success(true)
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }
     }
 
     /**
-     * Ensures YoutubeDL and FFmpeg are initialized exactly once.
+     * Ensures YoutubeDL is initialized exactly once.
      * Safe to call from multiple coroutines — uses a mutex to prevent races.
      * If already initialized, returns immediately.
      */
@@ -150,13 +163,6 @@ class MainActivity : FlutterActivity() {
                 Log.d(TAG, "YoutubeDL initialized successfully")
             } catch (e: Exception) {
                 Log.e(TAG, "YoutubeDL.init() FAILED", e)
-                throw e
-            }
-            try {
-                FFmpeg.getInstance().init(application)
-                Log.d(TAG, "FFmpeg initialized successfully")
-            } catch (e: Exception) {
-                Log.e(TAG, "FFmpeg.init() FAILED", e)
                 throw e
             }
             ytDlpInitialized = true
@@ -304,45 +310,43 @@ class MainActivity : FlutterActivity() {
                 ensureInitialized()
                 val request = YoutubeDLRequest(url)
 
-                // Set output template
-                request.addOption("-o", "$outputPath/%(title)s.%(ext)s")
+                // 1. Create a safe temporary directory in cache
+                val cacheDir = java.io.File(applicationContext.cacheDir, "yt_dlp_tmp_$taskId")
+                if (!cacheDir.exists()) {
+                    cacheDir.mkdirs()
+                }
+
+                try {
+                    android.system.Os.setenv("TMPDIR", cacheDir.absolutePath, true)
+                    android.system.Os.setenv("HOME", cacheDir.absolutePath, true)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to set environment variables for yt-dlp", e)
+                }
+
+                // Set output template to the safe cache directory
+                request.addOption("--paths", cacheDir.absolutePath)
+                request.addOption("-o", "%(title)s.%(ext)s")
                 // Bypass YouTube bot detection / 429 errors
                 request.addOption("--extractor-args", "youtube:player_client=ios,android")
 
+                // (yt-dlp FFmpeg hooks disabled; handled natively below)
                 // Configure format-specific options
                 when (format.lowercase()) {
                     "mp4" -> {
                         val heightLimit = quality.replace("p", "").trim()
                         request.addOption("-f", "bestvideo[height<=$heightLimit]+bestaudio/best[height<=$heightLimit]")
-                        request.addOption("--merge-output-format", "mp4")
+                        // Do not use yt-dlp's merger since it relies on finding ffmpeg in PATH
+                        // We will merge manually if needed, or rely on format 18/22 which is pre-merged.
+                        // Actually, yt-dlp will just leave two files if it can't merge, we will handle that.
                     }
                     "mp3" -> {
-                        request.addOption("-x")
-                        request.addOption("--audio-format", "mp3")
-                        // Map quality string to yt-dlp audio quality values
-                        val audioQuality = when (quality.lowercase()) {
-                            "best", "320k", "320" -> "0"
-                            "256k", "256" -> "1"
-                            "192k", "192" -> "2"
-                            "160k", "160" -> "3"
-                            "128k", "128" -> "5"
-                            "96k", "96" -> "6"
-                            "64k", "64" -> "8"
-                            "worst" -> "9"
-                            else -> "0"
-                        }
-                        request.addOption("--audio-quality", audioQuality)
-                    }
-                    else -> {
-                        // Default: best available
-                        request.addOption("-f", "best")
+                        // Disable yt-dlp's internal ffmpeg extraction as it fails to resolve paths in Android 16
+                        request.addOption("-f", "bestaudio/best")
                     }
                 }
 
                 // Don't overwrite existing files (for yt-dlp downloader)
                 request.addOption("--no-overwrites")
-                // Force FFmpeg to overwrite without prompting, avoiding infinite hangs
-                request.addOption("--postprocessor-args", "ffmpeg:-y")
 
                 // Send initial progress
                 Log.d(TAG, "handleStartDownload: sending starting event")
@@ -367,31 +371,53 @@ class MainActivity : FlutterActivity() {
                 // Download completed
                 Log.d(TAG, "handleStartDownload: YoutubeDL.execute completed successfully")
                 
-                // Scan the output directory to ensure files appear in Gallery/File Managers
+                // Copy the final processed file from the cache to the public outputPath
                 try {
-                    val dir = java.io.File(outputPath)
-                    if (dir.exists() && dir.isDirectory) {
-                        val filesToScan = dir.listFiles()?.map { it.absolutePath }?.toTypedArray()
-                        if (!filesToScan.isNullOrEmpty()) {
-                            android.media.MediaScannerConnection.scanFile(
-                                this@MainActivity,
-                                filesToScan,
-                                null,
-                                null
-                            )
-                        }
+                    val finalDir = java.io.File(outputPath)
+                    if (!finalDir.exists()) {
+                        finalDir.mkdirs()
+                    }
+
+                    // Find the single file that yt-dlp generated in the cache dir
+                    val downloadedFiles = cacheDir.listFiles()
+                    if (downloadedFiles != null && downloadedFiles.isNotEmpty()) {
+                        var sourceFile = downloadedFiles[0] // Get the downloaded audio/video file
+
+                        // We will pass the raw file path back to Dart via the 'filePath' key
+                        // so Dart can perform JNI-based FFmpeg conversion (ffmpeg_kit_flutter_new)
+                        // which natively supports Android 16 linking constraints.
+                        
+                        val destFile = java.io.File(finalDir, sourceFile.name)
+                        
+                        // Copy file via Kotlin (Bypasses Scoped Storage POSIX execution block)
+                        sourceFile.copyTo(destFile, overwrite = true)
+                        
+                        Log.d(TAG, "Successfully copied file to ${destFile.absolutePath}")
+                        
+                        // Scan the new file so it appears in the gallery immediately
+                        android.media.MediaScannerConnection.scanFile(
+                            this@MainActivity,
+                            arrayOf(destFile.absolutePath),
+                            null,
+                            null
+                        )
+
+                        progressMap[taskId] = mapOf(
+                            "taskId" to taskId,
+                            "progress" to 100.0,
+                            "status" to "completed",
+                            "line" to "Download completed",
+                            "filePath" to destFile.absolutePath
+                        )
+                        sendProgressEvent(taskId, 100.0f, "completed", "Download completed", destFile.absolutePath)
+                    } else {
+                        Log.e(TAG, "Download completed but no file found in cache directory!")
+                        throw Exception("No file generated.")
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to scan files in $outputPath", e)
+                    Log.e(TAG, "Failed to copy file from cache to $outputPath", e)
+                    throw Exception("Failed to save or process the file: ${e.message}")
                 }
-
-                progressMap[taskId] = mapOf(
-                    "taskId" to taskId,
-                    "progress" to 100.0,
-                    "status" to "completed",
-                    "line" to "Download completed"
-                )
-                sendProgressEvent(taskId, 100.0f, "completed", "Download completed")
 
             } catch (e: CancellationException) {
                 progressMap[taskId] = mapOf(
@@ -411,6 +437,16 @@ class MainActivity : FlutterActivity() {
                 )
                 sendProgressEvent(taskId, 0.0f, "error", e.message ?: "Unknown error")
             } finally {
+                // Always clean up the temporary cache directory to prevent storage leaks
+                try {
+                    val cacheDir = java.io.File(applicationContext.cacheDir, "yt_dlp_tmp_$taskId")
+                    if (cacheDir.exists()) {
+                        cacheDir.deleteRecursively()
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to clean up cache dir", e)
+                }
+
                 activeJobs.remove(taskId)
             }
         }
@@ -419,16 +455,18 @@ class MainActivity : FlutterActivity() {
         result.success(taskId)
     }
 
-    private fun sendProgressEvent(taskId: String, progress: Float, status: String, line: String) {
+    private fun sendProgressEvent(taskId: String, progress: Float, status: String, line: String, filePath: String? = null) {
         mainHandler.post {
-            eventSink?.success(
-                mapOf(
-                    "taskId" to taskId,
-                    "progress" to progress.toDouble(),
-                    "status" to status,
-                    "line" to line
-                )
+            val eventMap = mutableMapOf<String, Any>(
+                "taskId" to taskId,
+                "progress" to progress.toDouble(),
+                "status" to status,
+                "line" to line
             )
+            if (filePath != null) {
+                eventMap["filePath"] = filePath
+            }
+            eventSink?.success(eventMap)
         }
     }
 

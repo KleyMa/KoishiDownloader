@@ -43,10 +43,14 @@ class DownloadPage extends ConsumerWidget {
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
-                    Icons.download_rounded,
-                    color: Colors.white,
-                    size: 18,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.asset(
+                      'assets/images/logo/android/play_store_512.png',
+                      width: 26,
+                      height: 26,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -145,8 +149,8 @@ class DownloadPage extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1DB954)
-                              .withValues(alpha: 0.15),
+                          color:
+                              const Color(0xFF1DB954).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -159,22 +163,25 @@ class DownloadPage extends ConsumerWidget {
                         ),
                       ),
                     const Spacer(),
-                    if (queue.any((i) => i.status == DownloadStatus.completed || i.status == DownloadStatus.cancelled))
+                    if (queue.any((i) =>
+                        i.status == DownloadStatus.completed ||
+                        i.status == DownloadStatus.cancelled))
                       TextButton.icon(
                         onPressed: () {
                           queueNotifier.clearCompleted();
                         },
-                        icon: const Icon(Icons.cleaning_services_rounded, size: 16),
+                        icon: const Icon(Icons.cleaning_services_rounded,
+                            size: 16),
                         label: Text(tr('queue_clear_completed')),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.white.withValues(alpha: 0.6),
-                          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                          textStyle: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w500),
                         ),
                       ),
                     if (queue.isNotEmpty &&
                         !queueNotifier.isProcessing &&
-                        queue.any(
-                            (i) => i.status == DownloadStatus.queued))
+                        queue.any((i) => i.status == DownloadStatus.queued))
                       _StartQueueButton(
                         onPressed: () {
                           queueNotifier.startProcessingQueue();

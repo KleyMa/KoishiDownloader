@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -185,6 +188,7 @@ class QueueNotifier extends StateNotifier<List<DownloadItem>> {
             : settings.videoDownloadPath;
 
         _currentTaskId = item.id;
+        String? downloadedFilePath;
         
         _progressSubscription = ytDlp.progressStream.listen((data) {
           final taskId = data['taskId'] as String?;
@@ -209,6 +213,7 @@ class QueueNotifier extends StateNotifier<List<DownloadItem>> {
             if (status == 'converting') {
               updateItemStatus(item.id, DownloadStatus.converting);
             } else if (status == 'completed') {
+              downloadedFilePath = data['filePath'] as String?;
               updateItemStatus(item.id, DownloadStatus.completed);
             } else if (status == 'error') {
               final line = data['line'] as String?;
@@ -248,8 +253,37 @@ class QueueNotifier extends StateNotifier<List<DownloadItem>> {
           continue;
         }
 
-        updateItemStatus(item.id, DownloadStatus.completed, filePath: outputPath);
+        String finalFilePath = outputPath;
+        if (item.format == DownloadFormat.mp3 && downloadedFilePath != null && !downloadedFilePath!.endsWith('.mp3')) {
+          updateItemStatus(item.id, DownloadStatus.converting);
+          notifications.showProgressNotification(notificationId, title, "Converting to MP3...", 100);
+          
+          final rawFile = File(downloadedFilePath!);
+          final mp3FilePath = downloadedFilePath!.replaceAll(RegExp(r'\.[^.]+$'), '.mp3');
+          
+          final bitrateStr = item.quality.replaceAll(RegExp(r'[^\d]'), '');
+          final bitrate = bitrateStr.isEmpty ? '320' : bitrateStr;
+          
+          final session = await FFmpegKit.execute('-y -i "${rawFile.path}" -vn -b:a ${bitrate}k "$mp3FilePath"');
+          final returnCode = await session.getReturnCode();
+          
+          if (ReturnCode.isSuccess(returnCode)) {
+            if (rawFile.existsSync()) rawFile.deleteSync();
+            finalFilePath = mp3FilePath;
+          } else {
+            updateItemStatus(item.id, DownloadStatus.error, errorMessage: 'FFmpeg native JNI conversion failed');
+            await notifications.showErrorNotification(notificationId, title, 'Failed to convert audio to MP3');
+            continue;
+          }
+        } else if (downloadedFilePath != null) {
+          finalFilePath = downloadedFilePath!;
+        }
+
+        updateItemStatus(item.id, DownloadStatus.completed, filePath: finalFilePath);
         updateItemProgress(item.id, 1.0);
+        
+        // Scan the final file so it appears in the music library immediately
+        await ytDlp.scanFile(finalFilePath);
         await notifications.showCompletedNotification(notificationId, title);
       } catch (e, stackTrace) {
         debugPrint('[QueueNotifier] ❌ Download error for ${item.url}');

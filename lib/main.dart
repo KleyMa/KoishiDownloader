@@ -42,7 +42,7 @@ void main() async {
     await YtDlpService().ensureInitialized();
     debugPrint('[main] yt-dlp initialized successfully');
   } catch (e, stackTrace) {
-    debugPrint('[main] ⚠️ yt-dlp initialization failed: $e');
+    debugPrint('[main] yt-dlp initialization failed: $e');
     debugPrint('[main] Stack trace:\n$stackTrace');
     // App can still start; yt-dlp will auto-initialize on first download
   }

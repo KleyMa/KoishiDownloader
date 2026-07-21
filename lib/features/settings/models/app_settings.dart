@@ -1,4 +1,4 @@
-import 'package:music_downloader/core/constants/app_constants.dart';
+import 'package:koishi_downloader/core/constants/app_constants.dart';
 
 /// Immutable model that represents the user's persisted preferences.
 ///

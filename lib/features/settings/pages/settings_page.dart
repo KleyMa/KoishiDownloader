@@ -124,25 +124,13 @@ class SettingsPage extends ConsumerWidget {
                 Center(
                   child: Column(
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFF1DB954).withValues(alpha: 0.2),
-                              const Color(0xFF1DB954).withValues(alpha: 0.05),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Icon(
-                          Icons.download_rounded,
-                          color:
-                              const Color(0xFF1DB954).withValues(alpha: 0.6),
-                          size: 24,
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.asset(
+                          'assets/images/logo/android/play_store_512.png',
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
                         ),
                       ),
                       const SizedBox(height: 12),
