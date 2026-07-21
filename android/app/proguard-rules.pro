@@ -1,6 +1,6 @@
-# Proguard rules for youtubedl-android and FFmpeg
+# Proguard rules for youtubedl-android and FFmpegKit
 -keep class com.yausername.youtubedl_android.** { *; }
--keep class com.yausername.ffmpeg.** { *; }
+-keep class com.arthenica.ffmpegkit.** { *; }
 -keep class com.yausername.aria2c.** { *; }
 
 # Jackson (used by youtubedl-android for JSON parsing)

@@ -37,7 +37,7 @@ class NotificationService {
     if (_initialised) return;
 
     const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
+      '@mipmap/launcher_icon',
     );
 
     const initSettings = InitializationSettings(android: androidSettings);
@@ -111,7 +111,7 @@ class NotificationService {
       playSound: false,
       enableVibration: false,
       onlyAlertOnce: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@mipmap/launcher_icon',
       subText: '$clampedProgress%',
       category: AndroidNotificationCategory.progress,
     );
@@ -137,7 +137,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       autoCancel: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@mipmap/launcher_icon',
       category: AndroidNotificationCategory.status,
     );
 
@@ -166,7 +166,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       autoCancel: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@mipmap/launcher_icon',
       category: AndroidNotificationCategory.error,
     );
 

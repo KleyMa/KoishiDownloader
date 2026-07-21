@@ -31,11 +31,16 @@ void main() async {
   await EasyLocalization.ensureInitialized();
 
   // Initialize notification service
-  final notificationService = NotificationService.instance;
-  await notificationService.init();
+  try {
+    final notificationService = NotificationService.instance;
+    await notificationService.init();
+    debugPrint('[main] Notifications initialized successfully');
+  } catch (e, stackTrace) {
+    debugPrint('[main] Notification initialization failed: $e');
+    debugPrint('[main] Stack trace:\n$stackTrace');
+  }
 
-  // Request permissions
-  await PermissionsHelper.requestAllPermissions();
+  // (Permissions are now requested in AppRouter to avoid blocking release builds)
 
   // Initialize yt-dlp (pre-warm; will auto-retry on first download if it fails)
   try {

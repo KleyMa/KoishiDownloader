@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../features/download/pages/download_page.dart';
 import '../features/playlist/pages/playlist_page.dart';
 import '../features/settings/pages/settings_page.dart';
+import '../core/utils/permissions_helper.dart';
 
 class AppRouter extends StatefulWidget {
   const AppRouter({super.key});
@@ -14,6 +15,16 @@ class AppRouter extends StatefulWidget {
 
 class _AppRouterState extends State<AppRouter> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Request permissions after the first frame is rendered
+    // to avoid blocking the Flutter engine initialization in release mode.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PermissionsHelper.requestAllPermissions();
+    });
+  }
 
   final List<Widget> _pages = const [
     DownloadPage(),
