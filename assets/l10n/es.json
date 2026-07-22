@@ -177,5 +177,12 @@
   "general_search": "Buscar",
   "cancel": "Cancelar",
   "remove": "Eliminar",
-  "recommended": "Recomendado"
+  "recommended": "Recomendado",
+  "permissions": "Permisos",
+  "re_request_permissions": "Volver a solicitar permisos",
+  "re_request_permissions_desc": "Solicita los permisos si los rechazaste anteriormente",
+  "permissions_modal_title": "Permisos Requeridos",
+  "permissions_modal_desc": "La app podría no funcionar bien si no se otorgan los permisos para descargar y administrar archivos. Siempre puedes conceder esos permisos en el apartado de Ajustes.",
+  "i_understand": "Entiendo.",
+  "permissions_granted": "Todos los permisos necesarios han sido concedidos"
 }

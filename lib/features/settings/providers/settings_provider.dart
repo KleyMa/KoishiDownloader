@@ -15,7 +15,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     final audioQuality =
         prefs.getString(AppConstants.keyDefaultAudioQuality) ?? '320kbps';
     // Using absolute paths in the public Download directory so yt-dlp has write access on Android 10+
-    const defaultBase = '/storage/emulated/0/Download/MusicDownloader';
+    const defaultBase = '/storage/emulated/0/Download/KoishiDownloader';
     var videoPath = prefs.getString(AppConstants.keyVideoPath);
     var musicPath = prefs.getString(AppConstants.keyMusicPath);
     

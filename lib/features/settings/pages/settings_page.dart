@@ -7,6 +7,8 @@ import '../widgets/default_format_setting.dart';
 import '../widgets/default_quality_setting.dart';
 import '../widgets/download_path_setting.dart';
 import '../widgets/language_setting.dart';
+import '../../../core/utils/permissions_helper.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -84,6 +86,36 @@ class SettingsPage extends ConsumerWidget {
                       indent: 54,
                     ),
                     const DefaultQualitySetting(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Permissions section
+                _SectionHeader(title: tr('permissions')),
+                const SizedBox(height: 8),
+                _SettingsCard(
+                  children: [
+                    _PermissionsReRequestTile(
+                      onTap: () async {
+                        final granted = await PermissionsHelper.requestAllPermissions();
+                        if (!context.mounted) return;
+                        if (granted) {
+                          ScaffoldMessenger.of(context).clearSnackBars();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                tr('permissions_granted'),
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              backgroundColor: const Color(0xFF1DB954),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        } else {
+                          openAppSettings();
+                        }
+                      },
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -325,6 +357,72 @@ class _UpdateYtDlpTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       tr('update_ytdlp_desc'),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.white.withValues(alpha: 0.3),
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PermissionsReRequestTile extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _PermissionsReRequestTile({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.security_rounded,
+                  color: Colors.blueAccent,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr('re_request_permissions'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      tr('re_request_permissions_desc'),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.4),
                         fontSize: 12,

@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/platform_channel.dart';
-import 'core/utils/permissions_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

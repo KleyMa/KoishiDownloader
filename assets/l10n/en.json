@@ -177,5 +177,12 @@
   "general_search": "Search",
   "cancel": "Cancel",
   "remove": "Remove",
-  "recommended": "Recommended"
+  "recommended": "Recommended",
+  "permissions": "Permissions",
+  "re_request_permissions": "Re-request permissions",
+  "re_request_permissions_desc": "Request permissions if you rejected them previously",
+  "permissions_modal_title": "Permissions Required",
+  "permissions_modal_desc": "The app might not work properly if permissions to download and manage files are not granted. You can always grant these permissions in the Settings section.",
+  "i_understand": "I understand.",
+  "permissions_granted": "All necessary permissions have been granted"
 }

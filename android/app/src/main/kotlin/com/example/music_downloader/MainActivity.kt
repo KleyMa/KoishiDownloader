@@ -188,7 +188,7 @@ class MainActivity : FlutterActivity() {
     private fun handleUpdateYtDlp(result: MethodChannel.Result) {
         coroutineScope.launch(Dispatchers.IO) {
             try {
-                val status = YoutubeDL.getInstance().updateYoutubeDL(application)
+                val status = YoutubeDL.getInstance().updateYoutubeDL(application, YoutubeDL.UpdateChannel.NIGHTLY)
                 mainHandler.post {
                     result.success(
                         when (status) {
@@ -214,6 +214,7 @@ class MainActivity : FlutterActivity() {
                 val request = YoutubeDLRequest(url)
                 request.addOption("--dump-json")
                 request.addOption("--no-playlist")
+                request.addOption("--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
                 // Bypass YouTube bot detection / 429 errors
                 request.addOption("--extractor-args", "youtube:player_client=ios,android")
                 val videoInfo = YoutubeDL.getInstance().getInfo(request)
@@ -261,6 +262,7 @@ class MainActivity : FlutterActivity() {
                 val request = YoutubeDLRequest(url)
                 request.addOption("--flat-playlist")
                 request.addOption("--dump-json")
+                request.addOption("--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
 
                 val response = YoutubeDL.getInstance().execute(request)
                 val output = response.out ?: ""
@@ -309,6 +311,7 @@ class MainActivity : FlutterActivity() {
             try {
                 ensureInitialized()
                 val request = YoutubeDLRequest(url)
+                request.addOption("--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
 
                 // 1. Create a safe temporary directory in cache
                 val cacheDir = java.io.File(applicationContext.cacheDir, "yt_dlp_tmp_$taskId")
@@ -334,7 +337,7 @@ class MainActivity : FlutterActivity() {
                 when (format.lowercase()) {
                     "mp4" -> {
                         val heightLimit = quality.replace("p", "").trim()
-                        request.addOption("-f", "bestvideo[height<=$heightLimit]+bestaudio/best[height<=$heightLimit]")
+                        request.addOption("-f", "b[ext=mp4][height<=$heightLimit]/b[height<=$heightLimit]/b")
                         // Do not use yt-dlp's merger since it relies on finding ffmpeg in PATH
                         // We will merge manually if needed, or rely on format 18/22 which is pre-merged.
                         // Actually, yt-dlp will just leave two files if it can't merge, we will handle that.

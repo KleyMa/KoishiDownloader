@@ -21,8 +21,45 @@ class _AppRouterState extends State<AppRouter> {
     super.initState();
     // Request permissions after the first frame is rendered
     // to avoid blocking the Flutter engine initialization in release mode.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      PermissionsHelper.requestAllPermissions();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final granted = await PermissionsHelper.requestAllPermissions();
+      if (!granted && mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF282828),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              tr('permissions_modal_title'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              tr('permissions_modal_desc'),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 15,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(
+                  tr('i_understand'),
+                  style: const TextStyle(
+                    color: Color(0xFF1DB954),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
     });
   }
 

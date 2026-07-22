@@ -56,8 +56,8 @@ class AppConstants {
   };
 
   // ── Default paths ───────────────────────────────────────────────────────
-  static const String defaultMusicFolder = 'MusicDownloader/Music';
-  static const String defaultVideoFolder = 'MusicDownloader/Videos';
+  static const String defaultMusicFolder = 'KoishiDownloader/Music';
+  static const String defaultVideoFolder = 'KoishiDownloader/Videos';
 
   // ── SharedPreferences keys ──────────────────────────────────────────────
   static const String keyDefaultFormat = 'default_format';
